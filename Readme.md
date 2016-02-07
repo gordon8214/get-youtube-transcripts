@@ -1,8 +1,6 @@
 # Get YouTube Transcripts
 
-## Purpose
-
-Retrieve the plain text transcript from any YouTube video with a manually-created captions (auto-generated captions not currently supported.)
+Retrieves the plain text transcript from any YouTube video with a manually-created captions (auto-generated captions not currently supported.)
 
 ## Usage
 
