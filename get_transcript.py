@@ -25,7 +25,6 @@ parser.add_argument('--format', help='Choose output format. Only used if "file" 
 args = parser.parse_args()
 
 # Detect the current platform for platform-specific code later on.
-global platform
 if sys.platform.startswith('darwin'):
     platform = 'mac'
 elif os.name == 'nt':
@@ -55,7 +54,9 @@ class VidProperties:
 
 
 def parse_url(vid_url):
-    """Take video URL, perform basic sanity check, then filter out video ID."""
+    """Take video URL, perform basic sanity check, then filter out video ID.
+    :param vid_url: str
+    """
 
     if 'watch?v' in vid_url:
         vid_code = re.findall(ur'^[^=]+=([^&]+)', vid_url)
@@ -65,7 +66,9 @@ def parse_url(vid_url):
 
 
 def get_title(vid_id):
-    """Get title of video from ID."""
+    """Get title of video from ID.
+    :param vid_id: str
+    """
     video_info = urllib2.urlopen('http://youtube.com/get_video_info?video_id=' + vid_id)
     video_info = video_info.read()
     if urlparse.parse_qs(video_info)['status'][0] == 'fail':
@@ -99,14 +102,19 @@ def get_transcript():
 
 
 def format_transcript(transcript):
-    """Receives the full XML transcript as plain text."""
+    """Receives the full XML transcript as plain text.
+    :param transcript: str
+    """
 
     # Remove XML tags.
     transcript = re.sub("</text>", "\n", transcript)
     transcript = re.sub("<[^>]+>", "", transcript)
 
-    # Replace all ASCII character codes with the actual character.
-    rep = {"&amp;#39;": "'", "&amp;gt;": ">", "&amp;quot;": '"', "&lt;i&gt;": "", "&lt;/i&gt;": ""}
+    # Remove encoded HTML tags.
+    transcript = re.sub("&lt;.*?&gt;", "", transcript)
+
+    # Replace ASCII character codes with the actual character.
+    rep = {"&amp;#39;": "'", "&amp;gt;": ">", "&amp;quot;": '"'}
 
     # use these three lines to do the replacement.
     rep = dict((re.escape(k), v) for k, v in rep.iteritems())
@@ -131,7 +139,9 @@ def format_transcript(transcript):
 
 
 def create_filename(title):
-    """Create filename-safe version of video title."""
+    """Create filename-safe version of video title.
+    :param title: str
+    """
 
     # Remove characters that will cause problems in filenames.
     rep = {"/": "-", ":": " -", "\\": '-', "<": "-", ">": "-", "|": "-", "?": "", "*": ""}
@@ -148,8 +158,9 @@ raw_transcript = get_transcript()
 vidinfo.transcript = format_transcript(raw_transcript)
 
 if not args.file:
-    if args.format == 'dict': # Write to stdout instead of file
-        sys.stdout.write(str({'title': vidinfo.title, 'filename': vidinfo.filename, 'transcript': vidinfo.transcript}) + '\n')
+    if args.format == 'dict':  # Write to stdout instead of file
+        sys.stdout.write(str({
+            'title': vidinfo.title, 'filename': vidinfo.filename, 'transcript': vidinfo.transcript}) + '\n')
         sys.exit(0)
     elif args.format == 'pipes':
         sys.stdout.write(vidinfo.title + '|' + vidinfo.filename + '|' + vidinfo.transcript)
@@ -170,7 +181,6 @@ if not args.overwrite:
         sys.exit(1)
 
 # Write transcript to file.
-
 try:
     with open(outfile, 'w') as output_file:
         output_file.write('Title: ' + vidinfo.title + '\n\n')
