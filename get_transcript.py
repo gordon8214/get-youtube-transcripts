@@ -60,6 +60,9 @@ def parse_url(vid_url):
 
     if 'watch?v' in vid_url:
         vid_code = re.findall(ur'^[^=]+=([^&]+)', vid_url)
+    elif 'youtu.be/' in vid_url:
+        vid_code = re.findall(ur'youtu\.be/([^&]+)', vid_url)
+
     else:
         raise ValueError()
     return vid_code[0]
