@@ -38,7 +38,6 @@ else:
 #
 class VidProperties:
     """Get and store video attributes (ID & Title)."""
-
     def __init__(self):
         self.id = None
         self.title = None
@@ -54,10 +53,11 @@ class VidProperties:
 
 
 def parse_url(vid_url):
-    """Take video URL, perform basic sanity check, then filter out video ID.
-    :param vid_url: str
     """
-
+    Take video URL, perform basic sanity check, then filter out video ID.
+    @param vid_url: URL of the video to get transcript from.
+    @type vid_url: str
+    """
     if 'watch?v' in vid_url:
         vid_code = re.findall(ur'^[^=]+=([^&]+)', vid_url)
     elif 'youtu.be/' in vid_url:
@@ -69,8 +69,10 @@ def parse_url(vid_url):
 
 
 def get_title(vid_id):
-    """Get title of video from ID.
-    :param vid_id: str
+    """
+    Get title of video from ID.
+    @param vid_id: YouTube ID for the video.
+    @type vid_id: str
     """
     video_info = urllib2.urlopen('http://youtube.com/get_video_info?video_id=' + vid_id)
     video_info = video_info.read()
@@ -83,7 +85,6 @@ def get_title(vid_id):
 
 def get_transcript():
     """Retrieve XML transcript from video ID. Works for human-created transcripts only."""
-
     not_found_error = 'ERROR: No transcript found. This can mean one of several things:\n- There is no ' \
                       'human-created transcript for this video.\n- The video URL was entered incorrectly.\n' \
                       '- The video has "burned-on" captions, where the captions are part of the video track. ' \
@@ -105,10 +106,11 @@ def get_transcript():
 
 
 def format_transcript(transcript):
-    """Receives the full XML transcript as plain text.
-    :param transcript: str
     """
-
+    Receives the full XML transcript as plain text.
+    @param transcript: Transcript as XML file.
+    @type transcript: str
+    """
     # Remove XML tags.
     transcript = re.sub("</text>", "\n", transcript)
     transcript = re.sub("<[^>]+>", "", transcript)
@@ -142,10 +144,11 @@ def format_transcript(transcript):
 
 
 def create_filename(title):
-    """Create filename-safe version of video title.
-    :param title: str
     """
-
+    Create filename-safe version of video title.
+    @param title: Title of the video.
+    @type title: str
+    """
     # Remove characters that will cause problems in filenames.
     rep = {"/": "-", ":": " -", "\\": '-', "<": "-", ">": "-", "|": "-", "?": "", "*": ""}
 
