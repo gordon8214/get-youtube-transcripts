@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# -*- coding: utf-8 -*-
+
 import urllib2
 import re
 import argparse
@@ -18,9 +20,9 @@ parser.add_argument('--file', help='The path to the file you want to save transc
                                    ' Example: ~/Desktop/transcript.txt or ~/Desktop', action='store', dest='file')
 parser.add_argument('--overwrite', help='Overwrites existing file at save location, if present.', action='store_true')
 parser.add_argument('--open', help='Open the created transcript.', action='store_true')
-parser.add_argument('--format', help='Choose output format. Only used if "file" argument is not specified. '
-                                     'Values: dict, pipes',
-                    default='pipes', action='store', dest='format')
+parser.add_argument('--reducenewlines', help='Remove all newlines except those immediately following a period.',
+                    action='store_true')
+parser.add_argument('--printfilepath', help='Prints the outfile file path on console.', action='store_true')
 
 args = parser.parse_args()
 
@@ -35,7 +37,6 @@ else:
     platform = 'unknown'
 
 
-#
 class VidProperties:
     """Get and store video attributes (ID & Title)."""
     def __init__(self):
@@ -105,6 +106,24 @@ def get_transcript():
     return transcript_xml
 
 
+def remove_extra_linebreaks(string):
+    """
+    Remove extraneous linebreaks from text.
+    If line ends with a period, insert a linebreak.
+    @param string: The transcript to remove breaks from.
+    @type string: str
+    @return: Formatted text.
+    """
+    string_by_line = string.split('\n')
+    new_string = str()
+    for line in string_by_line:
+        if line.endswith('.'):
+            new_string += line + '\n'
+        else:
+            new_string += line + ' '
+    return new_string
+
+
 def format_transcript(transcript):
     """
     Receives the full XML transcript as plain text.
@@ -119,19 +138,16 @@ def format_transcript(transcript):
     transcript = re.sub("&lt;.*?&gt;", "", transcript)
 
     # Replace ASCII character codes with the actual character.
-    rep = {"&amp;#39;": "'", "&amp;gt;": ">", "&amp;quot;": '"'}
+    rep = {"&amp;#39;": "'", "&amp;gt;": ">", "&amp;quot;": '"', "&amp;lt;": "<"}
 
-    # use these three lines to do the replacement.
+    # Slick single-pass regex replacement.
     rep = dict((re.escape(k), v) for k, v in rep.iteritems())
     pattern = re.compile("|".join(rep.keys()))
     transcript = pattern.sub(lambda m: rep[re.escape(m.group(0))], transcript)
 
-    # After each 120-character block, insert newline at next period.
-    # TODO: Improve this. Not all periods indicate the end of a sentence.
-    transcript = re.sub("\\n", " ", transcript)
-    regex = re.compile(ur'(.{120}[^.]+\S+\s)')
-    matches = re.findall(regex, transcript)
-    transcript = '\n'.join(matches)
+    # Remove all newlines except those immediately following a period to improve readability.
+    if args.reducenewlines:
+        transcript = remove_extra_linebreaks(transcript)
 
     # If text is more than 75% capitalized, we make it all lowercase for easier reading.
     num_upper_chars = len((re.findall("[A-Z]", transcript)))
@@ -158,19 +174,12 @@ def create_filename(title):
     return pattern.sub(lambda m: rep[re.escape(m.group(0))], title)
 
 
+# EXECUTION START HERE.
+
 # Collect the video, ID, transcript and title.
 vidinfo = VidProperties()
 raw_transcript = get_transcript()
 vidinfo.transcript = format_transcript(raw_transcript)
-
-if not args.file:
-    if args.format == 'dict':  # Write to stdout instead of file
-        sys.stdout.write(str({
-            'title': vidinfo.title, 'filename': vidinfo.filename, 'transcript': vidinfo.transcript}) + '\n')
-        sys.exit(0)
-    elif args.format == 'pipes':
-        sys.stdout.write(vidinfo.title + '|' + vidinfo.filename + '|' + vidinfo.transcript)
-        sys.exit(0)
 
 # Validate output path.
 outfile = os.path.expanduser(args.file)
@@ -197,6 +206,10 @@ except IOError as errtext:
         sys.exit(1)
     else:
         raise errtext
+
+# Print filename to console.
+if args.printfilepath:
+    print outfile
 
 # Open created file.
 if args.open:
